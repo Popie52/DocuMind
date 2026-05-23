@@ -5,3 +5,7 @@ dist/
 __pycache__/
 *.log
 .vscode/
+
+%APPDATA%npm-cache/
+
+data/
