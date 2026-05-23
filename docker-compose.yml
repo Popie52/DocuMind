@@ -20,5 +20,14 @@ services:
       - .env
     restart: unless-stopped
 
+  bot: 
+    build: 
+      context: ./apps/bot
+    container_name: rag-bot
+    env_file:
+      - .env
+    depends_on:
+      - api
+
 volumes:
   postgres-data:  

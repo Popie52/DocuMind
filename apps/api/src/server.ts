@@ -10,6 +10,15 @@ app.get("/health", async () => {
   };
 });
 
+app.post("/ask", async (req) => {
+    const body = req.body as {
+        message: string;
+    };
+    return {
+        answer: `Recieve: ${body.message}`,
+    }
+});
+
 const start = async () => {
     try {
         await app.listen({
