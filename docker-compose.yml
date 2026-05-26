@@ -35,6 +35,16 @@ services:
       - postgres
       - qdrant
     restart: unless-stopped
+  
+  ai:
+    build:
+      context: ./apps/ai
+    container_name: rag-ai
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
 
   bot: 
     build: 
