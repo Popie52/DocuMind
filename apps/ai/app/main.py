@@ -5,6 +5,9 @@ from app.routes.upload import (
 from app.vectorstores.qdrant import (
     create_collection,
 )
+from app.routes.query import (
+    router as query_router
+)
 
 create_collection()
 
@@ -12,6 +15,10 @@ app = FastAPI()
 
 app.include_router(
     upload_router
+)
+
+app.include_router(
+    query_router
 )
 
 @app.get("/health")
