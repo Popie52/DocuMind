@@ -1,6 +1,9 @@
 from app.retrievers.qdrant import retrieve_chunks
 from fastapi import APIRouter
 from pydantic import BaseModel
+from app.services.rag import (
+    ask_question,
+)
 
 router = APIRouter()
 
@@ -12,9 +15,10 @@ class QueryRequest(
 
 @router.post("/query")
 async def query_documents(body: QueryRequest):
-    chunks = retrieve_chunks(body.question)
+    response = (
+        await ask_question(
+            body.question
+        )
+    )
 
-    return {
-        "question": body.question,
-        "chunks": chunks,
-    }
+    return response
