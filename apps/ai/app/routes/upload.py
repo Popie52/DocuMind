@@ -13,6 +13,10 @@ from app.services.parser import (
     parse_document,
 )
 
+from app.services.ingest import (
+    ingest_document,
+)
+
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
@@ -43,7 +47,11 @@ async def parse_pdf(file: Annotated[UploadFile, File(...)]):
 
     print(parsed_text[:500])
 
+    chunks_created = (
+        await ingest_document(parsed_text)
+    )
+
     return {
         "filename": file.filename,
-        "content": parsed_text,
+        "chunks": chunks_created,
     }
