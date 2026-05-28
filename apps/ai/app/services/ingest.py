@@ -20,12 +20,14 @@ from app.vectorstores.qdrant import (
 
 async def ingest_document(
     text: str,
+    document_id: str,
+    filename: str,
 ):
     chunks = split_text(text)
 
     points = []
 
-    for chunk in chunks:
+    for index, chunk in enumerate(chunks):
         embedding = embed_text(
             chunk
         )
@@ -36,6 +38,9 @@ async def ingest_document(
                 vector=embedding,
                 payload={
                     "text": chunk,
+                    "document_id": document_id,
+                    "filename": filename,
+                    "chunk_index": index,
                 },
             )
         )

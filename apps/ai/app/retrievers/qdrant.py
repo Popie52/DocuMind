@@ -26,7 +26,9 @@ def retrieve_chunks(
     return [
         {
             "score": result.score,
-            "text": result.payload["text"]
+            "text": result.payload["text"],
+            "filename": result.payload["filename"],
+            "chunk_index": result.payload["chunk_index"]
         }
         for result in results.points
     ]

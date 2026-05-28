@@ -48,7 +48,8 @@ async def parse_pdf(file: Annotated[UploadFile, File(...)]):
     print(parsed_text[:500])
 
     chunks_created = (
-        await ingest_document(parsed_text)
+        await ingest_document(parsed_text,
+        document_id="temp-doc-id",filename=file.filename)
     )
 
     return {
