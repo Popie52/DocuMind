@@ -7,6 +7,7 @@ from fastapi import (
     APIRouter,
     File,
     UploadFile,
+    Form,
 )
 
 from app.services.parser import (
@@ -28,7 +29,16 @@ os.makedirs(
 
 
 @router.post("/parse")
-async def parse_pdf(file: Annotated[UploadFile, File(...)]):
+async def parse_pdf(
+    document_id: Annotated[
+        str,
+        Form(...)
+    ],
+    file: Annotated[
+        UploadFile,
+        File(...)
+    ],
+):
     file_path = (
         f"{UPLOAD_DIR}/"
         f"{file.filename}"
@@ -49,7 +59,7 @@ async def parse_pdf(file: Annotated[UploadFile, File(...)]):
 
     chunks_created = (
         await ingest_document(parsed_text,
-        document_id="temp-doc-id",filename=file.filename)
+                              document_id=document_id, filename=file.filename)
     )
 
     return {

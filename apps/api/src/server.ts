@@ -1,27 +1,24 @@
 import Fastify from "fastify";
 import multipart from "@fastify/multipart";
 import { uploadRoutes } from "./routes/upload.js";
+import { askRoutes } from "./routes/ask.js";
 
 const app = Fastify({
   logger: true,
 });
 
 
-await app.register(multipart);
+await app.register(multipart, {
+  limits: {
+    fileSize: 20*1024*1024,
+  }
+});
 await app.register(uploadRoutes);
+await app.register(askRoutes);
 
 app.get("/health", async () => {
   return {
     status: "ok",
-  };
-});
-
-app.post("/ask", async (req) => {
-  const body = req.body as {
-    message: string;
-  };
-  return {
-    answer: `Recieve: ${body.message}`,
   };
 });
 
