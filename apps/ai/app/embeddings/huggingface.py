@@ -12,3 +12,12 @@ model = SentenceTransformer(
 def embed_text(text: str):
     embedding = model.encode(text)
     return embedding.tolist()
+
+def embed_texts(texts: list[str]):
+    embeddings = model.encode(
+        texts,
+        batch_size=32,
+        show_progress_bar=False,
+    )
+
+    return embeddings.tolist()

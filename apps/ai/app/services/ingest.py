@@ -9,7 +9,7 @@ from app.chunking.splitter import (
 )
 
 from app.embeddings.huggingface import (
-    embed_text,
+    embed_texts
 )
 
 from app.vectorstores.qdrant import (
@@ -27,11 +27,9 @@ async def ingest_document(
 
     points = []
 
-    for index, chunk in enumerate(chunks):
-        embedding = embed_text(
-            chunk
-        )
+    embeddings = embed_texts(chunks)
 
+    for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
         points.append(
             PointStruct(
                 id=str(uuid4()),
@@ -46,8 +44,7 @@ async def ingest_document(
         )
 
     client.upsert(
-        collection_name=
-        COLLECTION_NAME,
+        collection_name=COLLECTION_NAME,
         points=points,
     )
 

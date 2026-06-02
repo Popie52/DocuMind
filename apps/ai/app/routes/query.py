@@ -17,7 +17,7 @@ class QueryRequest(
 async def query_documents(body: QueryRequest):
     response = (
         await ask_question(
-            body.question
+            body.question,
         )
     )
 

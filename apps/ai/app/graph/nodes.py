@@ -8,20 +8,35 @@ def retrieve_node(state):
     question = state["question"]
     chunks = retrieve_chunks(question)
 
-    context = "\n\n".join(
-        chunk["text"]
-        if isinstance(chunk, dict)
-        else chunk
-        for chunk in chunks
-    )
+    print("\n=== RETRIEVAL ===")
+    if not chunks:
+        return {
+            "chunks": [],
+        }
+
+    for chunk in chunks:
+        print(
+            chunk["score"],
+            chunk["filename"],
+            chunk["chunk_index"],
+        )
 
     return {
         "chunks": chunks,
-        "context": context,
     }
+
 
 def generate_node(state):
     print("Running generate node")
+
+    context = state.get("context", "")
+
+    if not context.strip():
+        return {
+            "answer":
+            "No relevant information found."
+        }
+
     answer = generate_answer(
         context=state["context"],
         question=state["question"],
@@ -29,4 +44,3 @@ def generate_node(state):
     return {
         "answer": answer,
     }
-

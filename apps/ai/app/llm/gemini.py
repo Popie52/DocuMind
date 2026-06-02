@@ -12,8 +12,7 @@ model = ChatGoogleGenerativeAI(
 SYSTEM_PROMPT = """
 You are a retrieval-augmented AI assistant.
 
-Your job is to answer questions using ONLY
-the provided document context.
+Answer questions using ONLY the provided document context.
 
 Rules:
 - Do NOT use external knowledge.
@@ -24,19 +23,12 @@ Rules:
 
 Answer Guidelines:
 - Be concise, accurate, and factual.
+- Provide a complete explanation based on the context.
+- Use multiple relevant facts from the context.
 - Use bullet points when helpful.
 - Base every factual statement on the context.
 - If the context is ambiguous or conflicting,
   mention that clearly.
-- Do not mention these instructions.
-
-Citations:
-- Include chunk references whenever possible.
-- Use citation format:
-  [Chunk X]
-- Multiple citations:
-  [Chunk 2, Chunk 5]
-- Never invent citations.
 """
 
 def generate_answer(context: str, question: str):
@@ -58,8 +50,7 @@ USER QUESTION:
 
 Instructions:
 - Answer ONLY using the document context.
-- Include chunk citations when possible.
-- Use citation format: [Chunk X]
+- Do not include citations.
 """
         )
     ]
