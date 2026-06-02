@@ -1,9 +1,12 @@
 from app.rerankers.cross_encoder import (
     rerank_chunks,
 )
+from app.core.timer import Timer
+from app.core.logger import logger
 
 
 def rerank_node(state):
+    logger.info("Running rerank node")
     chunks = state["chunks"]
 
     if not chunks:
@@ -12,23 +15,40 @@ def rerank_node(state):
             "context": "",
         }
 
-    if state.get("page_query", False):
+    with Timer() as timer:
 
-        reranked = sorted(
-            chunks,
-            key=lambda x: (
-                x.get("page", 0),
-                x.get("chunk_index", 0),
-            ),
-        )
+        if state.get("page_query", False):
 
-    else:
+            logger.info(
+                f"Page query detected. "
+                f"Skipping rerank. "
+                f"Chunks={len(chunks)}"
+            )
 
-        reranked = rerank_chunks(
-            question=state["question"],
-            chunks=chunks,
-            top_k=3,
-        )
+            reranked = sorted(
+                chunks,
+                key=lambda x: (
+                    x.get("page", 0),
+                    x.get("chunk_index", 0),
+                ),
+            )
+
+        else:
+
+            logger.info(
+                f"Running cross-encoder rerank "
+                f"on {len(chunks)} chunks"
+            )
+
+            reranked = rerank_chunks(
+                question=state["question"],
+                chunks=chunks,
+                top_k=3,
+            )
+
+            logger.info(
+                    f"Reranked -> {len(reranked)} chunks"
+                )
 
     pages = {}
 
@@ -59,6 +79,18 @@ def rerank_node(state):
 
     context = "\n\n".join(
         context_parts
+    )
+
+    logger.info(
+        f"Pages={len(pages)} "
+        f"Chunks={len(reranked)} "
+        f"ContextChars={len(context)} "
+        f"ApproxTokens={len(context.split())}"
+    )
+
+    logger.info(
+        f"Rerank node completed in "
+        f"{timer.elapsed_ms:.2f} ms"
     )
 
     return {

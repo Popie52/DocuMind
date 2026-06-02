@@ -8,15 +8,23 @@ from app.retrievers.qdrant import (
 )
 
 from app.graph.workflow import graph
+from app.core.timer import Timer
+from app.core.logger import logger
 
 
 async def ask_question(
     question: str,
 ):
+    timer = Timer()
     response = graph.invoke(
         {
             "question": question,
         }
+    )
+
+    logger.info(
+        f"Total request time "
+        f"{timer.elapsed_ms()} ms"
     )
 
     citations = (
