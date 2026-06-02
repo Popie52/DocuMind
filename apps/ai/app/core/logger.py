@@ -1,17 +1,12 @@
 import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format=(
+        "%(asctime)s "
+        "%(levelname)s "
+        "%(message)s"
+    ),
+)
 
-def setup_logger():
-    logging.basicConfig(
-        level=logging.INFO,
-        format=(
-            "%(asctime)s | "
-            "%(levelname)s | "
-            "%(name)s | "
-            "%(message)s"
-        ),
-    )
-
-
-def get_logger(name: str):
-    return logging.getLogger(name)
+logger = logging.getLogger("rag-agent")

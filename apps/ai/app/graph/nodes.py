@@ -1,15 +1,16 @@
 from app.retrievers.qdrant import retrieve_chunks, retrieve_page_chunks
 from app.llm.gemini import generate_answer
 from app.utils.page_query import extract_page_numbers
+from app.core.logger import logger
 
 
 def retrieve_node(state):
-    print("Running retrieve node")
+    logger.info("Running retrieve node")
     question = state["question"]
     page = extract_page_numbers(question)
 
     if page:
-        print(f"Page query: {page}")
+        logger.info(f"Page query: {page}")
 
         chunks = retrieve_page_chunks(page)
 
@@ -20,7 +21,9 @@ def retrieve_node(state):
 
         page_query = False
 
-    print("\n=== RETRIEVAL ===")
+    logger.info("\n=== RETRIEVAL ===")
+    logger.info(f"Question: {question}")
+    logger.info(f"Retrieved {len(chunks)} chunks")
 
     if not chunks:
         return {
@@ -29,10 +32,10 @@ def retrieve_node(state):
         }
 
     for chunk in chunks:
-        print(
-            chunk.get("score", "N/A"),
-            chunk["filename"],
-            chunk["chunk_index"],
+        logger.info(f"""
+            page={chunk["page"]}
+            score={chunk.get("score", "N/A")}
+            file={chunk["filename"]}"""
         )
 
     return {
@@ -42,7 +45,7 @@ def retrieve_node(state):
 
 
 def generate_node(state):
-    print("Running generate node")
+    logger.info("Running generate node")
 
     context = state.get("context", "")
 
