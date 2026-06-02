@@ -8,6 +8,9 @@ from app.vectorstores.qdrant import (
 from app.routes.query import (
     router as query_router
 )
+from app.routes.metrics import (
+    router as metrics_router
+)
 
 create_collection()
 
@@ -20,6 +23,11 @@ app.include_router(
 app.include_router(
     query_router
 )
+
+app.include_router(
+    metrics_router
+)
+
 
 @app.get("/health")
 async def health():

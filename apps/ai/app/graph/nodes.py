@@ -3,6 +3,10 @@ from app.llm.gemini import generate_answer
 from app.utils.page_query import extract_page_numbers
 from app.core.logger import logger
 from app.core.timer import Timer
+from app.observability.metrics import (
+    increment,
+    add_response_time,
+)
 
 def retrieve_node(state):
     logger.info("Running retrieve node")
@@ -12,12 +16,14 @@ def retrieve_node(state):
 
     if page:
         logger.info(f"Page query: {page}")
+        increment("page_queries_total")
 
         chunks = retrieve_page_chunks(page)
 
         page_query = True
 
     else:
+        increment("semantic_queries_total")
         chunks = retrieve_chunks(question)
 
         page_query = False
@@ -26,7 +32,8 @@ def retrieve_node(state):
     logger.info(f"Question: {question}")
     logger.info(f"Retrieved {len(chunks)} chunks")
 
-    time_elapsed = time_elapsed()
+    time_elapsed = timer.elapsed_ms()
+    add_response_time(time_elapsed)
 
     if not chunks:
         return {
@@ -59,6 +66,9 @@ def generate_node(state):
     context = state.get("context", "")
 
     if not context.strip():
+        increment(
+            "failed_queries_total"
+        )
         return {
             "answer":
             "No relevant information found."
@@ -72,6 +82,7 @@ def generate_node(state):
         f"Generation completed in "
         f"{timer.elapsed_ms()} ms"
     )
+    add_response_time(timer.elapsed_ms())
     return {
         "answer": answer,
     }

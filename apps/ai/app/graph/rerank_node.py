@@ -3,7 +3,7 @@ from app.rerankers.cross_encoder import (
 )
 from app.core.timer import Timer
 from app.core.logger import logger
-
+from app.observability.metrics import add_rerank_time
 
 def rerank_node(state):
     logger.info("Running rerank node")
@@ -49,6 +49,7 @@ def rerank_node(state):
             logger.info(
                     f"Reranked -> {len(reranked)} chunks"
                 )
+    add_rerank_time(timer.elapsed_ms())
 
     pages = {}
 
