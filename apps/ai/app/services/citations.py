@@ -5,7 +5,7 @@ def format_citations(chunks):
         citations.append({
             "document_id": chunk["document_id"],
             "filename": chunk["filename"],
-            "chunk": chunk["chunk_index"],
+            "page": chunk["page"],
         })
 
     return citations

@@ -9,15 +9,9 @@ from app.graph.rerank_node import (
 
 graph_builder = StateGraph(RAGState)
 
-graph_builder.add_node(
-    "retrieve",
-    retrieve_node,
-)
-graph_builder.add_node("generate", generate_node)
-graph_builder.add_node(
-    "rerank",
-    rerank_node,
-)
+graph_builder.add_node("retrieve", retrieve_node,)
+graph_builder.add_node("generate",generate_node)
+graph_builder.add_node("rerank",rerank_node,)
 
 graph_builder.add_edge(START, "retrieve")
 graph_builder.add_edge("retrieve", "rerank")

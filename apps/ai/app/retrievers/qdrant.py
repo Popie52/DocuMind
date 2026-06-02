@@ -73,6 +73,43 @@ def retrieve_chunks(
                 result.payload[
                     "chunk_index"
                 ],
+            "page": result.payload["page"],
         })
 
     return formatted_results
+
+
+def retrieve_page_chunks(pages: list[int]):
+    results = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(
+            should=[
+                FieldCondition(
+                    key="page",
+                    match=MatchValue(value=page),
+                )
+                for page in pages
+            ]
+        ),
+        limit=2000,
+    )
+
+    points = results[0]
+
+    chunks = []
+
+    for point in points:
+        payload = point.payload
+
+        chunks.append({
+            "text": payload["text"],
+            "filename": payload["filename"],
+            "page": payload["page"],
+            "document_id": payload["document_id"],
+            "chunk_index": payload["chunk_index"],
+            "score": 1.0,
+        })
+
+    chunks.sort(key=lambda x: (x["page"], x["chunk_index"]))
+
+    return chunks

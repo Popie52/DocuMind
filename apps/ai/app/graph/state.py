@@ -12,6 +12,7 @@ class Chunk(TypedDict):
 
 class RAGState(TypedDict):
     question: str
+    page_query: bool
     chunks: List[Chunk]
     context: str
     answer: str

@@ -36,7 +36,7 @@ bot.on("message:text", async (ctx) => {
       citationText = "\n\nSources:\n";
 
       for (const citation of citations) {
-        citationText += `- ${citation.filename} (chunk ${citation.chunk})\n`;
+        citationText += `- ${citation.filename} (page ${citation.page})\n`;
       }
     }
 
