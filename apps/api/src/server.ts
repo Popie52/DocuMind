@@ -2,12 +2,14 @@ import Fastify from "fastify";
 import multipart from "@fastify/multipart";
 import { uploadRoutes } from "./routes/upload.js";
 import { askRoutes } from "./routes/ask.js";
+import { sessionRoutes } from "./routes/session.js";
 
 const app = Fastify({
   logger: true,
 });
 
 
+await app.register(sessionRoutes);
 await app.register(multipart, {
   limits: {
     fileSize: 20*1024*1024,
