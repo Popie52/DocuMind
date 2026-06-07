@@ -237,6 +237,59 @@ bot.command("current", async (ctx) => {
 });
 
 /**
+ * COMMAND 4 — /clear (clear conversation memory for active session)
+ */
+bot.command("clear", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  try {
+    await api.delete("/sessions/active/messages", {
+      data: {
+        telegramId: String(chatId),
+      },
+    });
+
+    await ctx.reply("Conversation memory cleared.");
+  } catch (error) {
+    console.error("CLEAR ERROR:", error);
+    await ctx.reply("Failed to clear conversation memory.");
+  }
+});
+
+/**
+ * COMMAND 5 — /status (list document processing status for active session)
+ */
+bot.command("status", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  try {
+    const response = await api.get("/sessions/active/status", {
+      params: {
+        telegramId: String(chatId),
+      },
+    });
+
+    if (!response.data || response.data.length === 0) {
+      return ctx.reply("No documents in current session.");
+    }
+
+    let message = "Documents Status\n\n";
+
+    for (const doc of response.data) {
+      message += `${doc.filename}\n`;
+      message += `${doc.status}\n\n`;
+    }
+
+    await ctx.reply(message);
+  } catch (error) {
+    console.error("STATUS ERROR:", error);
+    await ctx.reply("Failed to fetch document status.");
+  }
+});
+
+/**
  * START BOT
  */
 bot.start();

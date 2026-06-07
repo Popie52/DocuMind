@@ -126,3 +126,22 @@ export async function deleteSession(telegramId: string, sessionId: string) {
     success: true,
   };
 }
+
+export async function clearSessionMessages(sessionId: string) {
+  return prisma.message.deleteMany({
+    where: { sessionId },
+  });
+}
+
+export async function getSessionStatus(sessionId: string) {
+  return prisma.document.findMany({
+    where: { sessionId },
+    select: {
+      filename: true,
+      status: true,
+    },
+    orderBy: {
+      uploadedAt: "desc",
+    },
+  });
+}

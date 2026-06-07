@@ -53,38 +53,46 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     });
 
     const filePath = path.join(uploadDir, `${document.id}-${file.filename}`);
-
-    const buffer = await file.toBuffer();
-    await fs.promises.writeFile(filePath, buffer);
-
-    const form = new FormData();
-
-    form.append("document_id", document.id);
-    form.append("session_id", userState.activeSessionId); // ✅ IMPORTANT FIX
-    form.append("file", fs.createReadStream(filePath));
+    let finalStatus = "FAILED";
 
     try {
+      const buffer = await file.toBuffer();
+      await fs.promises.writeFile(filePath, buffer);
+
+      const form = new FormData();
+
+      form.append("document_id", document.id);
+      form.append("session_id", userState.activeSessionId);
+      form.append("file", fs.createReadStream(filePath));
+
       const aiResponse = await aiClient.post("/parse", form, {
         headers: form.getHeaders(),
       });
 
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { status: "READY" },
-      });
+      finalStatus = "READY";
 
       return {
         success: true,
         document,
         ai: aiResponse.data,
       };
-    } catch (error) {
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { status: "FAILED" },
-      });
+    } finally {
+      try {
+        await prisma.document.update({
+          where: { id: document.id },
+          data: { status: finalStatus },
+        });
+      } catch (updateError) {
+        console.error("Failed to finalize document status:", updateError);
+      }
 
-      throw error;
+      if (filePath) {
+        try {
+          await fs.promises.unlink(filePath);
+        } catch (cleanupError) {
+          console.warn("Failed to delete temporary upload file:", cleanupError);
+        }
+      }
     }
   });
 };
