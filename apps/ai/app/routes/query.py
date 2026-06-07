@@ -8,18 +8,25 @@ from app.services.rag import (
 router = APIRouter()
 
 
+class Message(BaseModel):
+    role: str
+    content: str
+
+
 class QueryRequest(BaseModel):
     question: str
     session_id: str
+    history: list[Message] = []
 
 
 @router.post("/query")
 async def query_documents(
     body: QueryRequest,
 ):
-    response = await ask_question(
+    response = ask_question(
         question=body.question,
         session_id=body.session_id,
+        history=body.history,
     )
 
     return response

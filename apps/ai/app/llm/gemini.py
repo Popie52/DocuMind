@@ -62,7 +62,17 @@ IMPORTANT
 - If context is incomplete, explicitly say so.
 """
 
-def generate_answer(context: str, question: str):
+
+def generate_answer(context: str, question: str, history_text: str = ""):
+
+    conversation_section = ""
+    if history_text.strip():
+        conversation_section = f"""
+CONVERSATION HISTORY
+====================
+{history_text}
+
+"""
 
     messages = [
         SystemMessage(
@@ -71,7 +81,7 @@ def generate_answer(context: str, question: str):
 
         HumanMessage(
             content=f"""
-DOCUMENT CONTEXT:
+{conversation_section}DOCUMENT CONTEXT:
 ----------------
 {context}
 

@@ -19,3 +19,4 @@ class RAGState(TypedDict):
     chunks: List[Chunk]
     context: str
     answer: str
+    history: list

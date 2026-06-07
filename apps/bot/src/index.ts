@@ -28,6 +28,34 @@ bot.command("start", async (ctx) => {
   await ctx.reply("Telegram RAG Agent is running");
 });
 
+function getDisplayName(ctx: any) {
+  return (
+    [ctx.from?.first_name, ctx.from?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Telegram user"
+  );
+}
+
+async function resolveSessionId(telegramId: string, displayName: string) {
+  const activeResponse = await api.get("/sessions/active", {
+    params: {
+      telegramId,
+    },
+  });
+
+  if (activeResponse.data?.id) {
+    return activeResponse.data.id;
+  }
+
+  const createResponse = await api.post("/sessions", {
+    telegramId,
+    name: displayName,
+  });
+
+  return createResponse.data.id;
+}
+
 /**
  * CHAT (RAG)
  */
@@ -41,8 +69,13 @@ bot.on("message:text", async (ctx) => {
   if (isCommand(text)) return;
 
   try {
+    const telegramId = String(chatId);
+    const sessionId = await resolveSessionId(telegramId, getDisplayName(ctx));
+
     const response = await api.post("/ask", {
       question: text,
+      session_id: sessionId,
+      telegramId,
     });
 
     const answer = response.data.answer;
@@ -89,11 +122,16 @@ bot.on("message:document", async (ctx) => {
       responseType: "arraybuffer",
     });
 
+    const telegramId = String(chatId);
+    const sessionId = await resolveSessionId(telegramId, getDisplayName(ctx));
+
     const form = new FormData();
 
     form.append("file", Buffer.from(response.data), {
       filename,
     });
+    form.append("telegramId", telegramId);
+    form.append("session_id", sessionId);
 
     await api.post("/upload", form, {
       headers: form.getHeaders(),

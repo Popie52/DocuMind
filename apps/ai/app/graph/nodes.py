@@ -106,9 +106,17 @@ def generate_node(state):
             "No relevant information found."
         }
 
+    history_text = "\n".join(
+        [
+            f"{m['role']}: {m['content']}"
+            for m in state.get("history", [])
+        ]
+    )
+
     answer = generate_answer(
         context=state["context"],
         question=state["question"],
+        history_text=history_text,
     )
     logger.info(
         f"Generation completed in "

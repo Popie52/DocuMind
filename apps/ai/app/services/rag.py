@@ -10,9 +10,10 @@ from app.observability.metrics import (
 )
 
 
-async def ask_question(
+def ask_question(
     question: str,
     session_id: str,
+    history: list,
 ):
     timer = Timer()
 
@@ -22,6 +23,7 @@ async def ask_question(
         {
             "question": question,
             "session_id": session_id,
+            "history": history,
         }
     )
 
