@@ -1,3 +1,4 @@
+import time
 from app.retrievers.qdrant import retrieve_chunks, retrieve_page_chunks
 from app.llm.gemini import generate_answer
 from app.utils.page_query import extract_page_numbers
@@ -85,15 +86,18 @@ file={chunk["filename"]}
         f"{time_elapsed} ms"
     )
 
+    print(f"[RETRIEVAL] {time_elapsed:.2f} ms")
+    print(f"Chunks Retrieved: {len(chunks)}")
+
     return {
         "chunks": chunks,
         "page_query": page_query,
+        "retrieval_ms": time_elapsed,
     }
 
 
 def generate_node(state):
     logger.info("Running generate node")
-    timer = Timer()
 
     context = state.get("context", "")
 
@@ -113,16 +117,23 @@ def generate_node(state):
         ]
     )
 
+    start = time.perf_counter()
     answer = generate_answer(
         context=state["context"],
         question=state["question"],
         history_text=history_text,
     )
+    llm_ms = (time.perf_counter() - start) * 1000
+
     logger.info(
         f"Generation completed in "
-        f"{timer.elapsed_ms()} ms"
+        f"{llm_ms:.2f} ms"
     )
-    add_response_time(timer.elapsed_ms())
+    add_response_time(llm_ms)
+
+    print(f"[LLM] {llm_ms:.2f} ms")
+
     return {
         "answer": answer,
+        "llm_ms": llm_ms,
     }

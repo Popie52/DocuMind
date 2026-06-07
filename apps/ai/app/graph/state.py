@@ -20,3 +20,6 @@ class RAGState(TypedDict):
     context: str
     answer: str
     history: list
+    retrieval_ms: NotRequired[float]
+    rerank_ms: NotRequired[float]
+    llm_ms: NotRequired[float]

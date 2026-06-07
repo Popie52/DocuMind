@@ -36,6 +36,21 @@ def ask_question(
         timer.elapsed_ms()
     )
 
+    retrieval_ms = response.get("retrieval_ms", 0.0)
+    rerank_ms = response.get("rerank_ms", 0.0)
+    llm_ms = response.get("llm_ms", 0.0)
+    total_ms = retrieval_ms + rerank_ms + llm_ms
+    chunks_retrieved = len(response.get("chunks", []))
+
+    print("\n========== QUERY ==========")
+    print(f"Question: {question}")
+    print(f"Chunks Retrieved: {chunks_retrieved}")
+    print(f"Retrieval: {retrieval_ms:.2f} ms")
+    print(f"Rerank: {rerank_ms:.2f} ms")
+    print(f"LLM: {llm_ms:.2f} ms")
+    print(f"Total: {total_ms:.2f} ms")
+    print("==========================\n")
+
     citations = format_citations(
         response["chunks"]
     )

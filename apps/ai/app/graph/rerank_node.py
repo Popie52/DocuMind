@@ -4,6 +4,8 @@ from app.rerankers.cross_encoder import (
 from app.core.timer import Timer
 from app.core.logger import logger
 from app.observability.metrics import add_rerank_time
+import time
+
 
 def rerank_node(state):
     logger.info("Running rerank node")
@@ -13,43 +15,49 @@ def rerank_node(state):
         return {
             "chunks": [],
             "context": "",
+            "rerank_ms": 0.0,
         }
 
-    with Timer() as timer:
+    start = time.perf_counter()
 
-        if state.get("page_query", False):
+    if state.get("page_query", False):
 
-            logger.info(
-                f"Page query detected. "
-                f"Skipping rerank. "
-                f"Chunks={len(chunks)}"
-            )
+        logger.info(
+            f"Page query detected. "
+            f"Skipping rerank. "
+            f"Chunks={len(chunks)}"
+        )
 
-            reranked = sorted(
-                chunks,
-                key=lambda x: (
-                    x.get("page", 0),
-                    x.get("chunk_index", 0),
-                ),
-            )
+        reranked = sorted(
+            chunks,
+            key=lambda x: (
+                x.get("page", 0),
+                x.get("chunk_index", 0),
+            ),
+        )
 
-        else:
+    else:
 
-            logger.info(
-                f"Running cross-encoder rerank "
-                f"on {len(chunks)} chunks"
-            )
+        logger.info(
+            f"Running cross-encoder rerank "
+            f"on {len(chunks)} chunks"
+        )
 
-            reranked = rerank_chunks(
-                question=state["question"],
-                chunks=chunks,
-                top_k=3,
-            )
+        reranked = rerank_chunks(
+            question=state["question"],
+            chunks=chunks,
+            top_k=3,
+        )
 
-            logger.info(
-                    f"Reranked -> {len(reranked)} chunks"
-                )
-    add_rerank_time(timer.elapsed_ms())
+        logger.info(
+            f"Reranked -> {len(reranked)} chunks"
+        )
+
+    rerank_ms = (time.perf_counter() - start) * 1000
+    add_rerank_time(rerank_ms)
+
+    print(f"[RERANK] {rerank_ms:.2f} ms")
+    print(f"Chunks After Rerank: {len(reranked)}")
 
     pages = {}
 
@@ -91,10 +99,11 @@ def rerank_node(state):
 
     logger.info(
         f"Rerank node completed in "
-        f"{timer.elapsed_ms:.2f} ms"
+        f"{rerank_ms:.2f} ms"
     )
 
     return {
         "chunks": reranked,
         "context": context,
+        "rerank_ms": rerank_ms,
     }
