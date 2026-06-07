@@ -8,51 +8,83 @@ from app.observability.metrics import (
     add_response_time,
 )
 
+
 def retrieve_node(state):
     logger.info("Running retrieve node")
+
     timer = Timer()
+
     question = state["question"]
+    session_id = state["session_id"]
+
     page = extract_page_numbers(question)
 
     if page:
-        logger.info(f"Page query: {page}")
-        increment("page_queries_total")
+        logger.info(
+            f"Page query: {page}"
+        )
 
-        chunks = retrieve_page_chunks(page)
+        increment(
+            "page_queries_total"
+        )
+
+        chunks = retrieve_page_chunks(
+            pages=page,
+            session_id=session_id,
+        )
 
         page_query = True
 
     else:
-        increment("semantic_queries_total")
-        chunks = retrieve_chunks(question)
+        increment(
+            "semantic_queries_total"
+        )
+
+        chunks = retrieve_chunks(
+            query=question,
+            session_id=session_id,
+        )
 
         page_query = False
 
-    # logger.info("\n=== RETRIEVAL ===")
-    logger.info(f"Question: {question}")
-    logger.info(f"Retrieved {len(chunks)} chunks")
+    logger.info(
+        f"Question: {question}"
+    )
+
+    logger.info(
+        f"Session: {session_id}"
+    )
+
+    logger.info(
+        f"Retrieved {len(chunks)} chunks"
+    )
 
     time_elapsed = timer.elapsed_ms()
-    add_response_time(time_elapsed)
+
+    add_response_time(
+        time_elapsed
+    )
 
     if not chunks:
         return {
             "chunks": [],
             "page_query": page_query,
         }
-    
 
     for chunk in chunks:
-        logger.info(f"""
-            page={chunk["page"]}
-            score={chunk.get("score", "N/A")}
-            file={chunk["filename"]}"""
+        logger.info(
+            f"""
+page={chunk["page"]}
+score={chunk.get("score", "N/A")}
+file={chunk["filename"]}
+"""
         )
 
     logger.info(
-        f"Retrived node completed int "
-        f"{time_elapsed} ms")
-        
+        f"Retrieve node completed in "
+        f"{time_elapsed} ms"
+    )
+
     return {
         "chunks": chunks,
         "page_query": page_query,

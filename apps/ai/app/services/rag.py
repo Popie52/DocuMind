@@ -1,11 +1,4 @@
-from app.llm.gemini import (
-    generate_answer,
-)
 from app.services.citations import format_citations
-
-from app.retrievers.qdrant import (
-    retrieve_chunks,
-)
 
 from app.graph.workflow import graph
 from app.core.timer import Timer
@@ -19,14 +12,16 @@ from app.observability.metrics import (
 
 async def ask_question(
     question: str,
+    session_id: str,
 ):
     timer = Timer()
-    increment(
-        "questions_total"
-    )
+
+    increment("questions_total")
+
     response = graph.invoke(
         {
             "question": question,
+            "session_id": session_id,
         }
     )
 
@@ -35,10 +30,12 @@ async def ask_question(
         f"{timer.elapsed_ms()} ms"
     )
 
-    add_response_time(timer.elapsed_ms())
+    add_response_time(
+        timer.elapsed_ms()
+    )
 
-    citations = (
-        format_citations(response["chunks"])
+    citations = format_citations(
+        response["chunks"]
     )
 
     return {

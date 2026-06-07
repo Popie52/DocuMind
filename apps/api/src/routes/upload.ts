@@ -10,7 +10,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     const parts = req.parts();
 
     let telegramId: string | undefined;
-    let file: any = null;
+    let file: any;
 
     for await (const part of parts) {
       if (part.type === "file") {
@@ -24,61 +24,67 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (!file) {
-      return res.status(400).send({
-        error: "No file uploaded",
-      });
+      return res.status(400).send({ error: "No file uploaded" });
     }
 
     if (!telegramId) {
-      return res.status(400).send({
-        error: "telegramId is required",
-      });
+      return res.status(400).send({ error: "telegramId is required" });
     }
 
     const userState = await prisma.userState.findUnique({
-      where: {
-        telegramId,
-      },
+      where: { telegramId },
     });
 
     if (!userState?.activeSessionId) {
-      return res.status(400).send({
-        error: "No active session found",
-      });
+      return res.status(400).send({ error: "No active session found" });
     }
 
     const uploadDir = path.join(process.cwd(), "uploads");
 
-    await fs.promises.mkdir(uploadDir, {
-      recursive: true,
-    });
-
-    const filePath = path.join(uploadDir, file.filename);
-
-    const buffer = await file.toBuffer();
-
-    await fs.promises.writeFile(filePath, buffer);
+    await fs.promises.mkdir(uploadDir, { recursive: true });
 
     const document = await prisma.document.create({
       data: {
         filename: file.filename,
         originalName: file.filename,
         sessionId: userState.activeSessionId,
+        status: "INDEXING",
       },
     });
 
+    const filePath = path.join(uploadDir, `${document.id}-${file.filename}`);
+
+    const buffer = await file.toBuffer();
+    await fs.promises.writeFile(filePath, buffer);
+
     const form = new FormData();
+
     form.append("document_id", document.id);
+    form.append("session_id", userState.activeSessionId); // ✅ IMPORTANT FIX
     form.append("file", fs.createReadStream(filePath));
 
-    const aiResponse = await aiClient.post("/parse", form, {
-      headers: form.getHeaders(),
-    });
+    try {
+      const aiResponse = await aiClient.post("/parse", form, {
+        headers: form.getHeaders(),
+      });
 
-    return res.send({
-      success: true,
-      document,
-      ai: aiResponse.data,
-    });
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { status: "READY" },
+      });
+
+      return {
+        success: true,
+        document,
+        ai: aiResponse.data,
+      };
+    } catch (error) {
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { status: "FAILED" },
+      });
+
+      throw error;
+    }
   });
 };

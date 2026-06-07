@@ -9,7 +9,7 @@ from app.chunking.splitter import (
 )
 
 from app.embeddings.huggingface import (
-    embed_texts
+    embed_texts,
 )
 
 from app.vectorstores.qdrant import (
@@ -21,6 +21,7 @@ from app.vectorstores.qdrant import (
 async def ingest_document(
     pages: list,
     document_id: str,
+    session_id: str,
     filename: str,
 ):
     all_points = []
@@ -28,14 +29,15 @@ async def ingest_document(
     total_chunks = 0
 
     for page_data in pages:
-
         page_number = page_data["page"]
-
         page_text = page_data["text"]
 
         chunks = split_text(
             page_text
         )
+
+        if not chunks:
+            continue
 
         embeddings = embed_texts(
             chunks
@@ -52,28 +54,25 @@ async def ingest_document(
                 embeddings,
             )
         ):
-
             all_points.append(
                 PointStruct(
                     id=str(uuid4()),
                     vector=embedding,
                     payload={
                         "text": chunk,
-                        "document_id":
-                            document_id,
-                        "filename":
-                            filename,
-                        "chunk_index":
-                            index,
-                        "page":
-                            page_number,
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "filename": filename,
+                        "chunk_index": index,
+                        "page": page_number,
                     },
                 )
             )
 
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=all_points,
-    )
+    if all_points:
+        client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=all_points,
+        )
 
     return total_chunks
