@@ -1,6 +1,9 @@
 # Telegram RAG Agent
 
-[![Docker Compose](https://img.shields.io/badge/docker-compose-ready-blue)](docker-compose.yml) [![Fastify](https://img.shields.io/badge/fastify-Node.js-brightgreen)](https://www.fastify.io/) [![FastAPI](https://img.shields.io/badge/FastAPI-Python-4B8BBE)](https://fastapi.tiangolo.com/) [![Qdrant](https://img.shields.io/badge/Qdrant-vector%20search-orange)](https://qdrant.ai/)
+[![Docker](https://img.shields.io/badge/docker-compose-blue?logo=docker)](./docker-compose.yml)
+[![Fastify](https://img.shields.io/badge/Fastify-Node.js-green?logo=node.js)](https://www.fastify.io/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Qdrant](https://img.shields.io/badge/Qdrant-vector%20search-orange)](https://qdrant.ai/)
 
 A production-oriented Telegram assistant that supports:
 

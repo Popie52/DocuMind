@@ -289,6 +289,37 @@ bot.command("status", async (ctx) => {
   }
 });
 
+bot.command("help", async (ctx) => {
+  const message = `
+Available Commands
+
+/new 
+Create a new session
+
+/list
+List sessions
+
+/current
+Show active session
+
+/switch 
+Switch session
+
+/docs
+Show documents in active session
+
+/status
+Show document indexing status
+
+/clear
+Clear conversation memory
+
+Upload a PDF and start asking questions.
+`;
+
+  await ctx.reply(message);
+});
+
 /**
  * START BOT
  */
