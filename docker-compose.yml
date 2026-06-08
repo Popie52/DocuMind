@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:17
@@ -35,7 +33,7 @@ services:
       - postgres
       - qdrant
     restart: unless-stopped
-  
+
   ai:
     build:
       context: ./apps/ai
@@ -48,8 +46,8 @@ services:
       - qdrant
     restart: unless-stopped
 
-  bot: 
-    build: 
+  bot:
+    build:
       context: ./apps/bot
     container_name: rag-bot
     env_file:
@@ -58,4 +56,4 @@ services:
       - api
 
 volumes:
-  postgres-data:  
+  postgres-data:
