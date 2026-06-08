@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import FormData from "form-data";
 import { api } from "./services/api.js";
+import crypto from "node:crypto";
 
 dotenv.config();
 
@@ -14,11 +15,23 @@ if (!token) {
 
 const bot = new Bot(token);
 
+// Axios Global Error Logging for API Client
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error(`[AXIOS ERROR] ${error.config?.method?.toUpperCase()} ${error.config?.url} failed:`, error.message);
+    if (error.response) {
+      console.error("[AXIOS ERROR DATA]:", error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * helper → detect commands
  */
-function isCommand(text: string) {
-  return text.startsWith("/");
+function isCommand(text?: string) {
+  return !!text && text.startsWith("/");
 }
 
 /**
@@ -28,6 +41,9 @@ bot.command("start", async (ctx) => {
   await ctx.reply("Telegram RAG Agent is running");
 });
 
+/**
+ * helper → user name
+ */
 function getDisplayName(ctx: any) {
   return (
     [ctx.from?.first_name, ctx.from?.last_name]
@@ -37,11 +53,12 @@ function getDisplayName(ctx: any) {
   );
 }
 
+/**
+ * session resolver
+ */
 async function resolveSessionId(telegramId: string, displayName: string) {
   const activeResponse = await api.get("/sessions/active", {
-    params: {
-      telegramId,
-    },
+    params: { telegramId },
   });
 
   if (activeResponse.data?.id) {
@@ -59,17 +76,14 @@ async function resolveSessionId(telegramId: string, displayName: string) {
 /**
  * CHAT (RAG)
  */
-bot.on("message:text", async (ctx) => {
+bot.on("message:text", async (ctx, next) => {
   const text = ctx.message?.text;
-  const chatId = ctx.chat?.id;
 
-  if (!text || !chatId) return;
-
-  // ignore commands
-  if (isCommand(text)) return;
+  if (!text) return;
+  if (text.startsWith("/")) return next();
 
   try {
-    const telegramId = String(chatId);
+    const telegramId = String(ctx.chat.id);
     const sessionId = await resolveSessionId(telegramId, getDisplayName(ctx));
 
     const response = await api.post("/ask", {
@@ -85,7 +99,6 @@ bot.on("message:text", async (ctx) => {
 
     if (citations.length > 0) {
       citationText = "\n\nSources:\n";
-
       for (const citation of citations) {
         citationText += `- ${citation.filename} (page ${citation.page})\n`;
       }
@@ -103,51 +116,59 @@ bot.on("message:text", async (ctx) => {
  */
 bot.on("message:document", async (ctx) => {
   const document = ctx.message?.document;
-  const chatId = ctx.chat?.id;
+  if (!document) return;
 
-  if (!document || !chatId) return;
+  const reqId = crypto.randomUUID();
+  const startTime = Date.now();
 
   try {
+    console.log(`\n[BOT] [${reqId}] PDF received`);
+    
     if (document.mime_type !== "application/pdf") {
       return ctx.reply("Only PDF files are supported");
     }
 
     const file = await ctx.getFile();
-
     const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
-
     const filename = document.file_name || `file-${Date.now()}.pdf`;
 
+    console.log(`[BOT] [${reqId}] Downloading file from Telegram...`);
     const response = await axios.get(fileUrl, {
       responseType: "arraybuffer",
+      timeout: 60000,
     });
 
-    const telegramId = String(chatId);
+    const fileBuffer = Buffer.from(response.data);
+    console.log(`[BOT] [${reqId}] Download complete. File size: ${fileBuffer.length} bytes`);
+
+    const telegramId = String(ctx.chat.id);
     const sessionId = await resolveSessionId(telegramId, getDisplayName(ctx));
 
     const form = new FormData();
-
-    form.append("file", Buffer.from(response.data), {
-      filename,
-    });
+    form.append("file", fileBuffer, { filename });
     form.append("telegramId", telegramId);
-    form.append("session_id", sessionId);
+
+    console.log(`[BOT] [${reqId}] Sending to API /upload`);
+    const headers = form.getHeaders();
+    headers["X-Request-ID"] = reqId;
 
     await api.post("/upload", form, {
-      headers: form.getHeaders(),
+      headers,
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
+      timeout: 10 * 60 * 1000, // 10 minutes timeout for the whole pipeline
     });
 
+    console.log(`[BOT] [${reqId}] Upload completed. Time taken: ${Date.now() - startTime}ms\n`);
     await ctx.reply("PDF uploaded and indexed.");
-  } catch (error) {
-    console.error("UPLOAD ERROR:", error);
+  } catch (error: any) {
+    console.error(`[BOT] [${reqId}] Request failed:`, error.message);
     await ctx.reply("Failed to upload PDF.");
   }
 });
 
 /**
- * COMMAND 1 — /new
+ * COMMAND: /new
  */
 bot.command("new", async (ctx) => {
   const text = ctx.message?.text;
@@ -175,17 +196,12 @@ bot.command("new", async (ctx) => {
 });
 
 /**
- * COMMAND 2 — /list
+ * COMMAND: /list
  */
 bot.command("list", async (ctx) => {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
   try {
     const response = await api.get("/sessions", {
-      params: {
-        telegramId: String(chatId),
-      },
+      params: { telegramId: String(ctx.chat.id) },
     });
 
     const sessions = response.data;
@@ -210,17 +226,12 @@ bot.command("list", async (ctx) => {
 });
 
 /**
- * COMMAND 3 — /current
+ * COMMAND: /current
  */
 bot.command("current", async (ctx) => {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
   try {
     const response = await api.get("/sessions/active", {
-      params: {
-        telegramId: String(chatId),
-      },
+      params: { telegramId: String(ctx.chat.id) },
     });
 
     const session = response.data;
@@ -237,17 +248,12 @@ bot.command("current", async (ctx) => {
 });
 
 /**
- * COMMAND 4 — /clear (clear conversation memory for active session)
+ * COMMAND: /clear
  */
 bot.command("clear", async (ctx) => {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
   try {
     await api.delete("/sessions/active/messages", {
-      data: {
-        telegramId: String(chatId),
-      },
+      data: { telegramId: String(ctx.chat.id) },
     });
 
     await ctx.reply("Conversation memory cleared.");
@@ -258,17 +264,12 @@ bot.command("clear", async (ctx) => {
 });
 
 /**
- * COMMAND 5 — /status (list document processing status for active session)
+ * COMMAND: /status
  */
 bot.command("status", async (ctx) => {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
   try {
     const response = await api.get("/sessions/active/status", {
-      params: {
-        telegramId: String(chatId),
-      },
+      params: { telegramId: String(ctx.chat.id) },
     });
 
     if (!response.data || response.data.length === 0) {
@@ -278,8 +279,7 @@ bot.command("status", async (ctx) => {
     let message = "Documents Status\n\n";
 
     for (const doc of response.data) {
-      message += `${doc.filename}\n`;
-      message += `${doc.status}\n\n`;
+      message += `${doc.filename}\n${doc.status}\n\n`;
     }
 
     await ctx.reply(message);
@@ -289,40 +289,41 @@ bot.command("status", async (ctx) => {
   }
 });
 
+/**
+ * COMMAND: /help
+ */
 bot.command("help", async (ctx) => {
-  const message = `
+  await ctx.reply(`
 Available Commands
 
-/new 
-Create a new session
-
+/new <name>
 /list
-List sessions
-
 /current
-Show active session
-
-/switch 
-Switch session
-
-/docs
-Show documents in active session
-
-/status
-Show document indexing status
-
 /clear
-Clear conversation memory
+/status
 
-Upload a PDF and start asking questions.
-`;
+Upload PDF and start chatting.
+`);
+});
 
-  await ctx.reply(message);
+/**
+ * ERROR HANDLER
+ */
+bot.catch((err) => {
+  console.error("GRAMMY ERROR:", err);
 });
 
 /**
  * START BOT
  */
-bot.start();
-
-console.log("Telegram bot is running");
+bot.api.deleteWebhook({ drop_pending_updates: true })
+  .then(() => {
+    bot.start({
+      onStart: (botInfo) => {
+        console.log(`Telegram bot running as @${botInfo.username}`);
+      },
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to initialize bot:", err);
+  });

@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 load_dotenv()
 
@@ -60,28 +60,47 @@ IMPORTANT
 ========================
 - Every answer must be grounded strictly in the provided context.
 - If context is incomplete, explicitly say so.
-"""
 
-
-def generate_answer(context: str, question: str, history_text: str = ""):
-
-    conversation_section = ""
-    if history_text.strip():
-        conversation_section = f"""
+========================
 CONVERSATION HISTORY
-====================
-{history_text}
+========================
 
+Conversation history is provided to maintain
+multi-turn dialogue.
+
+If the user refers to previous messages
+(for example:
+- what was my previous question
+- explain that again
+- continue
+)
+
+you may use conversation history.
+
+For document-related questions,
+use ONLY the document context.
 """
+
+
+def generate_answer(context: str, question: str, history: list | None = None):
+    history = history or []
 
     messages = [
         SystemMessage(
             content=SYSTEM_PROMPT
-        ),
+        )
+    ]
 
+    for msg in history[-10:]:
+        if msg.role == "user":
+            messages.append(HumanMessage(content=msg.content))
+        elif msg.role in ["assistant", "ai"]:
+            messages.append(AIMessage(content=msg.content))
+
+    messages.append(
         HumanMessage(
             content=f"""
-{conversation_section}DOCUMENT CONTEXT:
+DOCUMENT CONTEXT:
 ----------------
 {context}
 
@@ -94,7 +113,7 @@ Instructions:
 - Do not include citations.
 """
         )
-    ]
+    )
 
     response = model.invoke(messages)
 

@@ -24,6 +24,8 @@ async def ingest_document(
     session_id: str,
     filename: str,
 ):
+    print(f"\n[DEBUG-INGEST] Starting ingest_document for {filename}")
+    print(f"[DEBUG-INGEST] Session ID: {session_id} | Document ID: {document_id}")
     all_points = []
 
     total_chunks = 0
@@ -32,28 +34,20 @@ async def ingest_document(
         page_number = page_data["page"]
         page_text = page_data["text"]
 
-        chunks = split_text(
-            page_text
-        )
+        chunks = split_text(page_text)
 
         if not chunks:
             continue
 
-        embeddings = embed_texts(
-            chunks
-        )
+        print(f"[DEBUG-INGEST] Generating embeddings for {len(chunks)} chunks on page {page_number}")
+        embeddings = embed_texts(chunks)
+        print(f"[DEBUG-INGEST] Embeddings generated. Count: {len(embeddings)}.")
+        if embeddings:
+            print(f"[DEBUG-INGEST] Sample vector dimension: {len(embeddings[0])}")
 
         total_chunks += len(chunks)
 
-        for index, (
-            chunk,
-            embedding,
-        ) in enumerate(
-            zip(
-                chunks,
-                embeddings,
-            )
-        ):
+        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
             all_points.append(
                 PointStruct(
                     id=str(uuid4()),
@@ -69,10 +63,20 @@ async def ingest_document(
                 )
             )
 
+    print(f"[DEBUG-INGEST] Finished processing chunks. Total points to insert: {len(all_points)}")
+
     if all_points:
-        client.upsert(
+        print(f"[DEBUG-INGEST] Upserting {len(all_points)} points to collection '{COLLECTION_NAME}'...")
+        response = client.upsert(
             collection_name=COLLECTION_NAME,
             points=all_points,
         )
+        print(f"[DEBUG-INGEST] Qdrant insert success response: {response}")
+        
+        # Verify collection count
+        collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+        print(f"[DEBUG-INGEST] Qdrant total points after insert: {collection_info.points_count}")
+    else:
+        print("[DEBUG-INGEST] Warning: No points generated to insert.")
 
     return total_chunks

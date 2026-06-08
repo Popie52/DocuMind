@@ -13,9 +13,10 @@ parser = LlamaParse(
 
 
 async def parse_document(file_path: str):
+    print(f"\n[DEBUG-INGEST] Starting parse_document for file: {file_path}")
     documents = await parser.aload_data(file_path)
 
-    print(len(documents))
+    print(f"[DEBUG-INGEST] LlamaParse returned {len(documents)} document objects")
 
     pages = []
 
@@ -23,6 +24,7 @@ async def parse_document(file_path: str):
         text = doc.text.strip()
 
         if len(text.split()) < 10:
+            print(f"[DEBUG-INGEST] Skipping page {i} due to low word count (< 10 words)")
             continue
 
         meta = getattr(doc, "metadata", {}) or {}
@@ -38,31 +40,8 @@ async def parse_document(file_path: str):
             "text": text,
         })
 
+    print(f"[DEBUG-INGEST] Parsing complete. Extracted {len(pages)} valid pages.")
+    if pages:
+        print(f"[DEBUG-INGEST] Sample output (first 100 chars): {pages[0]['text'][:100].replace(chr(10), ' ')}")
+        
     return pages
-
-
-# async def main():
-#     # Assumes PDF is in: project_root/upload/sample.pdf
-
-#     pdf_path = Path(
-#     r"D:\learn\projects-ai-agents\telegram-rag-bot\apps\ai\uploads\The Go Programming Language (Alan A. A. Donovan  Brian W. Kernighan) (z-library.sk, 1lib.sk, z-lib.sk).pdf"
-# )
-
-#     if not pdf_path.exists():
-#         raise FileNotFoundError(
-#             f"PDF not found: {pdf_path}"
-#         )
-
-#     pages = await parse_document(str(pdf_path))
-
-#     print(f"\nParsed {len(pages)} pages\n")
-
-#     # for page in pages:
-#     #     print(f"\n{'=' * 50}")
-#     #     print(f"PAGE {page['page']}")
-#     #     print(f"{'=' * 50}")
-#     #     print(page["text"][:1000])  # first 1000 chars
-
-
-# if __name__ == "__main__":
-#     asyncio.run(main())

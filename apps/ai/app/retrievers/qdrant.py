@@ -18,7 +18,12 @@ def retrieve_chunks(
     min_score: float = 0.65,
     document_id: str | None = None,
 ):
+    print(f"\n[DEBUG-QUERY] Starting retrieve_chunks")
+    print(f"[DEBUG-QUERY] Query: '{query}'")
+    print(f"[DEBUG-QUERY] Expected filters -> session_id: {session_id}, document_id: {document_id}")
+    
     query_embedding = embed_text(query)
+    print(f"[DEBUG-QUERY] Query embedding generated. Dimension: {len(query_embedding)}")
 
     must_conditions = [
         FieldCondition(
@@ -42,6 +47,7 @@ def retrieve_chunks(
     search_filter = Filter(
         must=must_conditions,
     )
+    print(f"[DEBUG-QUERY] Search filter structure: {search_filter}")
 
     results = client.query_points(
         collection_name=COLLECTION_NAME,
@@ -49,11 +55,15 @@ def retrieve_chunks(
         query_filter=search_filter,
         limit=limit * 3,
     )
+    
+    print(f"[DEBUG-QUERY] Qdrant returned {len(results.points)} raw points.")
 
     formatted_results = []
 
     for result in results.points:
+        print(f"[DEBUG-QUERY] Evaluated point score: {result.score:.4f} (Threshold: {min_score})")
         if result.score < min_score:
+            print(f"[DEBUG-QUERY] -> Dropping chunk due to low score.")
             continue
 
         formatted_results.append(
@@ -68,6 +78,7 @@ def retrieve_chunks(
             }
         )
 
+    print(f"[DEBUG-QUERY] Returning {len(formatted_results)} filtered chunks above min_score.")
     return formatted_results
 
 
@@ -76,6 +87,7 @@ def retrieve_page_chunks(
     session_id: str,
     document_id: str | None = None,
 ):
+    print(f"\n[DEBUG-QUERY] Starting retrieve_page_chunks for pages: {pages}")
     must_conditions = [
         FieldCondition(
             key="session_id",
@@ -109,6 +121,7 @@ def retrieve_page_chunks(
         must=must_conditions,
         should=page_conditions,
     )
+    print(f"[DEBUG-QUERY] Search filter structure: {search_filter}")
 
     results = client.scroll(
         collection_name=COLLECTION_NAME,
@@ -117,6 +130,7 @@ def retrieve_page_chunks(
     )
 
     points = results[0]
+    print(f"[DEBUG-QUERY] Qdrant returned {len(points)} raw points from scroll.")
 
     chunks = []
 
@@ -142,4 +156,5 @@ def retrieve_page_chunks(
         )
     )
 
+    print(f"[DEBUG-QUERY] Returning {len(chunks)} chunks.")
     return chunks

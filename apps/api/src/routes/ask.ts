@@ -14,20 +14,14 @@ export async function askRoutes(app: FastifyInstance) {
 
     if (!sessionId && body.telegramId) {
       const state = await prisma.userState.findUnique({
-        where: {
-          telegramId: body.telegramId,
-        },
+        where: { telegramId: body.telegramId },
       });
 
       sessionId = state?.activeSessionId ?? undefined;
-
-      if (!sessionId) {
-        throw new Error("No active session");
-      }
     }
 
     if (!sessionId) {
-      throw new Error("Missing session_id or telegramId for ask request");
+      throw new Error("No active session");
     }
 
     await prisma.message.create({
@@ -39,31 +33,34 @@ export async function askRoutes(app: FastifyInstance) {
     });
 
     const history = await prisma.message.findMany({
-      where: {
-        sessionId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+      where: { sessionId },
+      orderBy: { createdAt: "desc" },
       take: 10,
     });
 
     history.reverse();
 
-    const response = await aiClient.post("/query", {
-      question: body.question,
-      session_id: sessionId,
-      history,
-    });
+    let aiResponse;
+
+    try {
+      aiResponse = await aiClient.post("/query", {
+        question: body.question,
+        session_id: sessionId,
+        history,
+      });
+    } catch (err) {
+      console.error("AI QUERY FAILED:", err);
+      throw new Error("AI service unavailable");
+    }
 
     await prisma.message.create({
       data: {
         sessionId,
         role: "assistant",
-        content: response.data.answer,
+        content: aiResponse.data.answer,
       },
     });
 
-    return response.data;
+    return aiResponse.data;
   });
 }

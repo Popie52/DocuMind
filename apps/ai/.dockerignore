@@ -10,6 +10,7 @@ __pycache__
 *.pyo
 *.pyd
 *.pytest_cache
+.venv
 
 # OS files
 .DS_Store
@@ -17,9 +18,6 @@ Thumbs.db
 
 # Git
 .git
-
-# Docker compose mounts and data
-data/
 
 # Local env files
 

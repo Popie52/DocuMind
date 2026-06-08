@@ -1,6 +1,7 @@
 import time
 from app.retrievers.qdrant import retrieve_chunks, retrieve_page_chunks
 from app.llm.gemini import generate_answer
+from app.llm.query_rewriter import rewrite_query
 from app.utils.page_query import extract_page_numbers
 from app.core.logger import logger
 from app.core.timer import Timer
@@ -110,18 +111,11 @@ def generate_node(state):
             "No relevant information found."
         }
 
-    history_text = "\n".join(
-        [
-            f"{m['role']}: {m['content']}"
-            for m in state.get("history", [])
-        ]
-    )
-
     start = time.perf_counter()
     answer = generate_answer(
         context=state["context"],
         question=state["question"],
-        history_text=history_text,
+        history=state.get("history", []),
     )
     llm_ms = (time.perf_counter() - start) * 1000
 
@@ -136,4 +130,19 @@ def generate_node(state):
     return {
         "answer": answer,
         "llm_ms": llm_ms,
+    }
+
+
+def rewrite_node(state):
+    logger.info("Running rewrite node")
+
+    rewritten = rewrite_query(
+        question=state["question"],
+        history=state.get("history", []),
+    )
+    
+    logger.info(f"Rewrite: '{state['question']}' -> '{rewritten}'")
+
+    return {
+        "question": rewritten
     }
