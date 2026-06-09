@@ -31,7 +31,7 @@ services:
       - .env
     depends_on:
       - postgres
-      - qdrant
+      - ai
     restart: unless-stopped
 
   ai:
@@ -39,7 +39,7 @@ services:
       context: ./apps/ai
     container_name: rag-ai
     ports:
-      - "8000:8000"
+      - "8080:8080"
     env_file:
       - .env
     depends_on:
@@ -54,8 +54,6 @@ services:
       - .env
     depends_on:
       - api
+    restart: unless-stopped
 
 
-
-volumes:
-  postgres-data:

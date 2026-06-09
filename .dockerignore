@@ -31,3 +31,10 @@ data/
 dist
 build
 *.log
+
+.env
+.env.*
+uploads
+.pytest_cache
+.mypy_cache
+.coverage

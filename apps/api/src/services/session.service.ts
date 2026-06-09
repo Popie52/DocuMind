@@ -105,26 +105,75 @@ export async function switchSession(telegramId: string, sessionId: string) {
 }
 
 export async function deleteSession(telegramId: string, sessionId: string) {
-  const session = await prisma.session.findFirst({
-    where: {
-      id: sessionId,
-      telegramId,
+  const allSessions = await prisma.session.findMany({
+    where: { telegramId },
+    orderBy: {
+      createdAt: "desc",
     },
   });
 
+  if (allSessions.length === 1) {
+    throw new Error("Cannot delete last session");
+  }
+
+  const session = allSessions.find(s => s.id === sessionId);
   if (!session) {
     throw new Error("Session not found");
   }
 
-  await prisma.session.delete({
-    where: {
-      id: sessionId,
-    },
+  const state = await prisma.userState.findUnique({
+    where: { telegramId },
   });
 
-  return {
-    success: true,
-  };
+  const isActive = state?.activeSessionId === sessionId;
+
+  await prisma.$transaction([
+    prisma.message.deleteMany({
+      where: { sessionId },
+    }),
+    prisma.document.deleteMany({
+      where: { sessionId },
+    }),
+    prisma.session.delete({
+      where: { id: sessionId },
+    }),
+  ]);
+
+  if (isActive) {
+    const nextSession = await prisma.session.findFirst({
+      where: {
+        telegramId,
+        NOT: {
+          id: sessionId,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (nextSession) {
+      await prisma.session.update({
+        where: {
+          id: nextSession.id,
+        },
+        data: {
+          isActive: true,
+        },
+      });
+
+      await prisma.userState.update({
+        where: {
+          telegramId,
+        },
+        data: {
+          activeSessionId: nextSession.id,
+        },
+      });
+    }
+  }
+
+  return { success: true };
 }
 
 export async function clearSessionMessages(sessionId: string) {

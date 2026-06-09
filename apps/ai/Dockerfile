@@ -6,7 +6,9 @@ RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync
+ENV PYTHONUNBUFFERED=1
+
+RUN uv sync --frozen
 
 COPY . .
 

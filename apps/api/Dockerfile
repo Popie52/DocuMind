@@ -7,11 +7,10 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 
-RUN pnpm install
-RUN npx prisma generate
+RUN pnpm install && \
+	npx prisma generate
 
-COPY ./src ./src
-
+COPY . .
 COPY tsconfig.json prisma.config.ts ./
 
 RUN pnpm build

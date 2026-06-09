@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml ./
 
 RUN pnpm install
 
-COPY ./src ./src
+COPY . .
 
 COPY tsconfig.json ./
 

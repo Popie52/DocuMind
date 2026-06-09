@@ -38,7 +38,23 @@ function isCommand(text?: string) {
  * START
  */
 bot.command("start", async (ctx) => {
-  await ctx.reply("Telegram RAG Agent is running");
+  try {
+    const telegramId = String(ctx.chat.id);
+    const sessionsResponse = await api.get("/sessions", {
+      params: { telegramId },
+    });
+
+    if (!sessionsResponse.data || sessionsResponse.data.length === 0) {
+      await api.post("/sessions", {
+        telegramId,
+        name: "General",
+      });
+    }
+  } catch (error) {
+    console.error("START INITIALIZATION ERROR:", error);
+  }
+
+  await ctx.reply("Telegram RAG Agent is running.\n\nSend me a PDF to get started, or use /help to see available commands.");
 });
 
 /**
@@ -128,6 +144,10 @@ bot.on("message:document", async (ctx) => {
       return ctx.reply("Only PDF files are supported");
     }
 
+    await ctx.reply(
+      "📄 Document received.\n\n⏳ Uploading, parsing and indexing the document. This may take a few minutes for large PDFs..."
+    );
+
     const file = await ctx.getFile();
     const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
     const filename = document.file_name || `file-${Date.now()}.pdf`;
@@ -160,10 +180,10 @@ bot.on("message:document", async (ctx) => {
     });
 
     console.log(`[BOT] [${reqId}] Upload completed. Time taken: ${Date.now() - startTime}ms\n`);
-    await ctx.reply("PDF uploaded and indexed.");
+    await ctx.reply("✅ PDF uploaded and indexed successfully.");
   } catch (error: any) {
     console.error(`[BOT] [${reqId}] Request failed:`, error.message);
-    await ctx.reply("Failed to upload PDF.");
+    await ctx.reply("❌ Failed to upload or index the document.");
   }
 });
 
@@ -226,6 +246,44 @@ bot.command("list", async (ctx) => {
 });
 
 /**
+ * COMMAND: /switch
+ */
+bot.command("switch", async (ctx) => {
+  const text = ctx.message?.text;
+  const chatId = ctx.chat?.id;
+
+  if (!text || !chatId) return;
+
+  const index = Number(text.replace("/switch", "").trim());
+
+  if (!index || isNaN(index)) {
+    return ctx.reply("Usage: /switch <number>");
+  }
+
+  try {
+    const sessionsResponse = await api.get("/sessions", {
+      params: { telegramId: String(chatId) },
+    });
+
+    const sessions = sessionsResponse.data;
+    const session = sessions[index - 1];
+
+    if (!session) {
+      return ctx.reply("Invalid session number.");
+    }
+
+    await api.patch(`/sessions/${session.id}/activate`, {
+      telegramId: String(chatId),
+    });
+
+    await ctx.reply(`✅ Switched to "${session.name}"`);
+  } catch (error) {
+    console.error("SWITCH ERROR:", error);
+    await ctx.reply("Failed to switch session.");
+  }
+});
+
+/**
  * COMMAND: /current
  */
 bot.command("current", async (ctx) => {
@@ -264,6 +322,50 @@ bot.command("clear", async (ctx) => {
 });
 
 /**
+ * COMMAND: /delete
+ */
+bot.command("delete", async (ctx) => {
+  const text = ctx.message?.text;
+  const chatId = ctx.chat?.id;
+
+  if (!text || !chatId) return;
+
+  const index = Number(text.replace("/delete", "").trim());
+
+  if (!index || isNaN(index)) {
+    return ctx.reply("Usage: /delete <number>");
+  }
+
+  try {
+    const sessionsResponse = await api.get("/sessions", {
+      params: { telegramId: String(chatId) },
+    });
+
+    const sessions = sessionsResponse.data;
+    const session = sessions[index - 1];
+
+    if (!session) {
+      return ctx.reply("Invalid session number.");
+    }
+
+    await api.delete(`/sessions/${session.id}`, {
+      data: { telegramId: String(chatId) },
+    });
+
+    await ctx.reply(`🗑️ Deleted session "${session.name}"`);
+  } catch (error: any) {
+    const msg = error.response?.data?.message || error.response?.data?.error || error.message;
+    console.error("DELETE ERROR:", msg);
+
+    if (msg?.includes("Cannot delete last session")) {
+      return ctx.reply("❌ Cannot delete your last session.\n\nCreate another session first.");
+    }
+
+    await ctx.reply("Failed to delete session.");
+  }
+});
+
+/**
  * COMMAND: /status
  */
 bot.command("status", async (ctx) => {
@@ -298,6 +400,8 @@ Available Commands
 
 /new <name>
 /list
+/switch <number>
+/delete <number>
 /current
 /clear
 /status
