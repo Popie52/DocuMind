@@ -13,7 +13,9 @@ A production-ready Telegram bot powered by Retrieval-Augmented Generation (RAG).
 
 <br />
 
-![Architecture Diagram](diagram/telegram_bot_architecture.png)
+![Service Map](diagram/docubot_service_map.svg)
+
+![Request Flows](diagram/docubot_request_flows.svg)
 
 </div>
 
