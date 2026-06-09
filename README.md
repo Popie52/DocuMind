@@ -103,12 +103,12 @@ Interact with your bot on Telegram using the following commands:
 
 | Command | Description |
 | :--- | :--- |
-| `/start` | Verify the bot is online |
+| `/start` | Verify the bot is online and auto-create a "General" session |
 | `/new <name>` | Create and activate a new conversation session |
 | `/list` | View all your saved sessions |
 | `/current` | View the currently active session |
-| `/switch <name>`| Switch context to a different session |
-| `/docs` | View indexed documents for the current session |
+| `/switch <number>`| Switch context to a different session by its number |
+| `/delete <number>`| Delete a session by its number |
 | `/status` | Check the parsing and indexing status of uploads |
 | `/clear` | Wipe conversation memory for the current session |
 | `/help` | Display the help menu |
