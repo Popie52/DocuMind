@@ -115,6 +115,15 @@ Interact with your bot on Telegram using the following commands:
 | `/clear` | Wipe conversation memory for the current session |
 | `/help` | Display the help menu |
 
+## 📸 Screenshots
+
+<div align="center">
+  <img src="screenshots/1.png" width="45%" />
+  <img src="screenshots/2.png" width="45%" />
+  <img src="screenshots/3.png" width="45%" />
+  <img src="screenshots/4.png" width="45%" />
+</div>
+
 ---
 
 ## 📁 Repository Structure
