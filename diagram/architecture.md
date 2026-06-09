@@ -46,7 +46,7 @@ flowchart LR
 - `apps/bot`
   - Telegram bot implementation using `grammy`
   - Sends `/ask` requests and `/upload` requests to the API service
-  - Manages user commands such as session creation, list, and active session queries
+  - Manages user commands such as session creation, list, switch, delete, and active session queries
 
 - `apps/api`
   - Fastify-based HTTP API gateway and session manager
@@ -96,9 +96,9 @@ flowchart LR
 - `apps/api/src/routes/upload.ts`
   - `/upload` endpoint, stores metadata and forwards PDF to AI service
 - `apps/api/src/routes/session.ts`
-  - session lifecycle endpoints (`/sessions`, `/sessions/active`, activation, delete)
+  - session lifecycle endpoints (`/sessions`, `/sessions/active`, activation, and deletion)
 - `apps/api/src/services/session.service.ts`
-  - session and user state logic with Prisma
+  - session and user state logic with Prisma (handles active session fallback on deletion and robust database transactions)
 - `apps/ai/app/routes/query.py`
   - `/query` endpoint for RAG questions
 - `apps/ai/app/routes/upload.py`
