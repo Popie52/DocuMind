@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Session {
+  id         String      @id @default(cuid())
+  telegramId String
+  name       String
+  isActive   Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  documents  Document[]
+  messages   Message[]
+  userStates UserState[]
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  uploadedAt   DateTime @default(now())
+  status       String   @default("INDEXING")
+  sessionId    String
+  session      Session  @relation(fields: [sessionId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id])
+}
+
+model UserState {
+  telegramId      String   @id
+  activeSessionId String?
+  session         Session? @relation(fields: [activeSessionId], references: [id])
+}

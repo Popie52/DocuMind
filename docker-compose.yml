@@ -1,18 +1,59 @@
-version: "3.9"
-
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: rag-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: rag
     ports:
       - "5432:5432"
-  
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./data/postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   qdrant:
-    image: qdrant/qdrant
+    image: qdrant/qdrant:v1.18.0
     container_name: rag-qdrant
     ports:
       - "6333:6333"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: rag_api
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - ai
+    restart: unless-stopped
+
+  ai:
+    build:
+      context: ./apps/ai
+    container_name: rag-ai
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  bot:
+    build:
+      context: ./apps/bot
+    container_name: rag-bot
+    env_file:
+      - .env
+    depends_on:
+      - api
+    restart: unless-stopped
+
+

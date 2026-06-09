@@ -1,0 +1,38 @@
+# Node and Python artifacts
+node_modules
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+*.pytest_cache
+.venv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+
+# Local env files
+
+# IDE files
+.vscode
+.idea
+
+# Build artifacts
+dist
+build
+*.log
+
+.env
+.env.*
+uploads
+.pytest_cache
+.mypy_cache
+.coverage
